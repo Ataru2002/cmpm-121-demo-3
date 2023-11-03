@@ -34,9 +34,11 @@ leaflet
   .addTo(map);
 
 const playerMarker = leaflet.marker(MERRILL_CLASSROOM);
+
 playerMarker.bindTooltip("That's you!");
 playerMarker.addTo(map);
 
+/*
 const sensorButton = document.querySelector("#sensor")!;
 sensorButton.addEventListener("click", () => {
   navigator.geolocation.watchPosition((position) => {
@@ -46,6 +48,7 @@ sensorButton.addEventListener("click", () => {
     map.setView(playerMarker.getLatLng());
   });
 });
+*/
 
 let points = 0;
 const statusPanel = document.querySelector<HTMLDivElement>("#statusPanel")!;
@@ -70,13 +73,37 @@ function makePit(i: number, j: number) {
     const container = document.createElement("div");
     container.innerHTML = `
                 <div>There is a pit here at "${i},${j}". It has value <span id="value">${value}</span>.</div>
-                <button id="poke">poke</button>`;
+                <button id="collect">collect</button>
+                <button id="deposit">deposit</button>`;
+    /*
     const poke = container.querySelector<HTMLButtonElement>("#poke")!;
     poke.addEventListener("click", () => {
       value--;
       container.querySelector<HTMLSpanElement>("#value")!.innerHTML =
         value.toString();
       points++;
+      statusPanel.innerHTML = `${points} points accumulated`;
+    });
+    */
+    const collect = container.querySelector<HTMLButtonElement>("#collect")!;
+    collect.addEventListener("click", () => {
+      if (value > 0) {
+        value--;
+        points++;
+      }
+      container.querySelector<HTMLSpanElement>("#value")!.innerHTML =
+        value.toString();
+      statusPanel.innerHTML = `${points} points accumulated`;
+    });
+
+    const deposit = container.querySelector<HTMLButtonElement>("#deposit")!;
+    deposit.addEventListener("click", () => {
+      if (points > 0) {
+        value++;
+        points--;
+      }
+      container.querySelector<HTMLSpanElement>("#value")!.innerHTML =
+        value.toString();
       statusPanel.innerHTML = `${points} points accumulated`;
     });
     return container;
