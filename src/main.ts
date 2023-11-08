@@ -1,5 +1,6 @@
 import "leaflet/dist/leaflet.css";
 import "./style.css";
+import { Board } from "./block.ts";
 import leaflet from "leaflet";
 import luck from "./luck";
 import "./leafletWorkaround";
@@ -28,11 +29,13 @@ const map = leaflet.map(mapContainer, {
 leaflet
   .tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
-    attribution:
-      '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    attribution: `&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>`,
   })
   .addTo(map);
 
+const currentMap: Board = new Board();
+
+currentMap.getGridCell(MERRILL_CLASSROOM.lat, MERRILL_CLASSROOM.lng);
 const playerMarker = leaflet.marker(MERRILL_CLASSROOM);
 
 playerMarker.bindTooltip("That's you!");
@@ -65,35 +68,45 @@ function makePit(i: number, j: number) {
       MERRILL_CLASSROOM.lng + (j + 1) * TILE_DEGREES,
     ],
   ]);
-
+  const point = currentMap.getGridCell(
+    MERRILL_CLASSROOM.lat + i * TILE_DEGREES,
+    MERRILL_CLASSROOM.lng + j * TILE_DEGREES
+  );
   const pit = leaflet.rectangle(bounds) as leaflet.Layer;
 
   pit.bindPopup(() => {
     let value = Math.floor(luck([i, j, "initialValue"].toString()) * 100);
+    for (let iter = 0; iter < value; iter++) {
+      currentMap.addCoin(
+        MERRILL_CLASSROOM.lat + i * TILE_DEGREES,
+        MERRILL_CLASSROOM.lng + j * TILE_DEGREES
+      );
+    } 
+
+    //string maker
+    let content = `<div>There is a pit here at "${i},${j}". It has value <span id="value">${value}</span>.</div>
+                  <p>Inventory:</p>
+                  <div id="scrollableContainer"`;
+    for (let iter = 0; iter < value; iter++) {
+      content += `
+      <p>${point.coinList[iter].x}:${point.coinList[iter].y}#${point.coinList[iter].serial}   <button id="collect">collect</button></p>`;
+    }
+    content += `</div><button id="deposit">deposit</button>`;
+
     const container = document.createElement("div");
-    container.innerHTML = `
-                <div>There is a pit here at "${i},${j}". It has value <span id="value">${value}</span>.</div>
-                <button id="collect">collect</button>
-                <button id="deposit">deposit</button>`;
-    /*
-    const poke = container.querySelector<HTMLButtonElement>("#poke")!;
-    poke.addEventListener("click", () => {
-      value--;
-      container.querySelector<HTMLSpanElement>("#value")!.innerHTML =
-        value.toString();
-      points++;
-      statusPanel.innerHTML = `${points} points accumulated`;
-    });
-    */
-    const collect = container.querySelector<HTMLButtonElement>("#collect")!;
-    collect.addEventListener("click", () => {
-      if (value > 0) {
-        value--;
-        points++;
-      }
-      container.querySelector<HTMLSpanElement>("#value")!.innerHTML =
-        value.toString();
-      statusPanel.innerHTML = `${points} points accumulated`;
+    container.innerHTML = content;
+
+    const collects = container.querySelectorAll<HTMLButtonElement>("#collect")!;
+    collects.forEach((collect) => {
+      collect.addEventListener("click", () => {
+        if (value > 0) {
+          value--;
+          points++;
+        }
+        container.querySelector<HTMLSpanElement>("#value")!.innerHTML =
+          value.toString();
+        statusPanel.innerHTML = `${points} points accumulated`;
+      });
     });
 
     const deposit = container.querySelector<HTMLButtonElement>("#deposit")!;
@@ -118,3 +131,5 @@ for (let i = -NEIGHBORHOOD_SIZE; i < NEIGHBORHOOD_SIZE; i++) {
     }
   }
 }
+
+//currentMap.printBoard();
