@@ -1,6 +1,6 @@
 import "leaflet/dist/leaflet.css";
 import "./style.css";
-import { Board } from "./block.ts";
+import { Board, Cache } from "./block.ts";
 import leaflet from "leaflet";
 import luck from "./luck";
 import "./leafletWorkaround";
@@ -34,6 +34,7 @@ leaflet
   .addTo(map);
 
 const currentMap: Board = new Board();
+const cacheList: Map<string, Cache> = new Map<string, Cache>();
 
 currentMap.getGridCell(MERRILL_CLASSROOM.lat, MERRILL_CLASSROOM.lng);
 const playerMarker = leaflet.marker(MERRILL_CLASSROOM);
@@ -72,24 +73,25 @@ function makePit(i: number, j: number) {
     MERRILL_CLASSROOM.lat + i * TILE_DEGREES,
     MERRILL_CLASSROOM.lng + j * TILE_DEGREES
   );
+  const key = `${point.x}_${point.y}`;
+  cacheList.set(key, new Cache(point));
   const pit = leaflet.rectangle(bounds) as leaflet.Layer;
 
   pit.bindPopup(() => {
     let value = Math.floor(luck([i, j, "initialValue"].toString()) * 100);
     for (let iter = 0; iter < value; iter++) {
-      currentMap.addCoin(
-        MERRILL_CLASSROOM.lat + i * TILE_DEGREES,
-        MERRILL_CLASSROOM.lng + j * TILE_DEGREES
-      );
-    } 
+      cacheList.get(key)?.addCoin(point);
+    }
 
     //string maker
+    const stringAdd: string[] | undefined = cacheList.get(key)?.format();
     let content = `<div>There is a pit here at "${i},${j}". It has value <span id="value">${value}</span>.</div>
                   <p>Inventory:</p>
                   <div id="scrollableContainer"`;
     for (let iter = 0; iter < value; iter++) {
-      content += `
-      <p>${point.coinList[iter].x}:${point.coinList[iter].y}#${point.coinList[iter].serial}   <button id="collect">collect</button></p>`;
+      if (stringAdd) {
+        content += `<p>${stringAdd[iter]}   <button id="collect">collect</button></p>`;
+      }
     }
     content += `</div><button id="deposit">deposit</button>`;
 
