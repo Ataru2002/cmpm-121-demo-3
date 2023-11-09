@@ -35,6 +35,10 @@ leaflet
 
 const currentMap: Board = new Board();
 const cacheList: Map<string, Cache> = new Map<string, Cache>();
+const south = document.getElementById("south");
+const north = document.getElementById("north");
+const east = document.getElementById("east");
+const west = document.getElementById("west");
 
 currentMap.getGridCell(MERRILL_CLASSROOM.lat, MERRILL_CLASSROOM.lng);
 const playerMarker = leaflet.marker(MERRILL_CLASSROOM);
@@ -68,7 +72,7 @@ function makePit(i: number, j: number) {
   pit.bindPopup(() => {
     let value = Math.floor(luck([i, j, "initialValue"].toString()) * 100);
     for (let iter = 0; iter < value; iter++) {
-      cacheList.get(key)?.addCoin(point);
+      cacheList.get(key)?.addCoin();
     }
 
     //string maker
@@ -123,3 +127,31 @@ for (let i = -NEIGHBORHOOD_SIZE; i < NEIGHBORHOOD_SIZE; i++) {
 }
 
 //currentMap.printBoard();
+
+south?.addEventListener("click", () => {
+  playerMarker.setLatLng({
+    lat: playerMarker.getLatLng().lat - 0.0001,
+    lng: playerMarker.getLatLng().lng,
+  });
+});
+
+north?.addEventListener("click", () => {
+  playerMarker.setLatLng({
+    lat: playerMarker.getLatLng().lat + 0.0001,
+    lng: playerMarker.getLatLng().lng,
+  });
+});
+
+east?.addEventListener("click", () => {
+  playerMarker.setLatLng({
+    lat: playerMarker.getLatLng().lat,
+    lng: playerMarker.getLatLng().lng + 0.0001,
+  });
+});
+
+west?.addEventListener("click", () => {
+  playerMarker.setLatLng({
+    lat: playerMarker.getLatLng().lat,
+    lng: playerMarker.getLatLng().lng - 0.0001,
+  });
+});

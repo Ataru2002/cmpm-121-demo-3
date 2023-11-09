@@ -3,7 +3,7 @@ interface Cell {
   y: number;
 }
 
-interface Coins {
+export interface Coins {
   coord: Cell;
   serial: number;
 }
@@ -35,19 +35,21 @@ export class Board {
 
 export class Cache {
   coinList: Coins[];
+  cell: Cell;
   description: string;
 
   constructor(cell: Cell) {
     this.description = `${cell.x}_${cell.y}`;
+    this.cell = cell;
     this.coinList = [];
   }
 
-  addCoin(cell: Cell) {
+  addCoin() {
     const curSerial: number =
       this.coinList.length > 0
         ? this.coinList[this.coinList.length - 1].serial + 1
         : 0;
-    this.coinList.push({ coord: cell, serial: curSerial });
+    this.coinList.push({ coord: this.cell, serial: curSerial });
   }
 
   format(): string[]{
