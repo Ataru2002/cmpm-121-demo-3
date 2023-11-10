@@ -1,9 +1,9 @@
-interface Cell {
+export interface Cell {
   x: number;
   y: number;
 }
 
-export interface Coins {
+interface Coins {
   coord: Cell;
   serial: number;
 }
@@ -39,7 +39,7 @@ export class Cache {
   description: string;
 
   constructor(cell: Cell) {
-    this.description = `${cell.x}_${cell.y}`;
+    this.description = ``;
     this.cell = cell;
     this.coinList = [];
   }
@@ -50,13 +50,22 @@ export class Cache {
         ? this.coinList[this.coinList.length - 1].serial + 1
         : 0;
     this.coinList.push({ coord: this.cell, serial: curSerial });
+    this.description = this.coinList.length.toString();
   }
 
-  format(): string[]{
+  format(): string[] {
     const res: string[] = [];
     this.coinList.map((coin) => {
       res.push(`${coin.coord.x}:${coin.coord.y}#${coin.serial}`);
     });
     return res;
+  }
+
+  toMomento(): string {
+    return this.description;
+  }
+
+  fromMomento(momento: string) {
+    this.description = momento;
   }
 }
