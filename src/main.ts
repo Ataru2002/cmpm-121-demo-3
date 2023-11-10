@@ -35,11 +35,12 @@ leaflet
 
 const currentMap: Board = new Board();
 const cacheList: Map<Cell, Cache> = new Map<Cell, Cache>();
-const momentos: Map<Cell, string> = new Map<Cell, string>();
+//const momentos: Map<Cell, string> = new Map<Cell, string>();
 const cacheMap: Map<Cell, [leaflet.Layer, boolean]> = new Map<
   Cell,
   [leaflet.Layer, boolean]
 >();
+
 const south = document.getElementById("south");
 const north = document.getElementById("north");
 const east = document.getElementById("east");
@@ -79,12 +80,22 @@ function makePit(i: number, j: number) {
   for (let iter = 0; iter < value; iter++) {
     cacheList.get(point)?.addCoin();
   }
-  momentos.set(point, cacheList.get(point)!.toMomento());
-
+  //momentos.set(point, cacheList.get(point)!.toMomento());
+  localStorage.setItem(
+    JSON.stringify(point),
+    cacheList.get(point)!.toMomento()
+  );
   pit.bindPopup(() => {
     //string maker
+    const pointS = JSON.stringify(point);
     const stringAdd: string[] = cacheList.get(point)!.format();
-    const content = messageGen(i, j, Number(momentos.get(point)), stringAdd);
+    //const content = messageGen(i, j, Number(momentos.get(point)), stringAdd);
+    const content = messageGen(
+      i,
+      j,
+      Number(localStorage.getItem(pointS)),
+      stringAdd
+    );
 
     const container = document.createElement("div");
     container.innerHTML = content;
@@ -92,7 +103,8 @@ function makePit(i: number, j: number) {
     const collects = container.querySelectorAll<HTMLButtonElement>("#collect")!;
     collects.forEach((collect) => {
       collect.addEventListener("click", () => {
-        let curValue = Number(momentos.get(point));
+        //let curValue = Number(momentos.get(point));
+        let curValue = Number(localStorage.getItem(pointS));
         if (curValue > 0) {
           curValue--;
           points++;
@@ -100,14 +112,16 @@ function makePit(i: number, j: number) {
         container.querySelector<HTMLSpanElement>("#value")!.innerHTML =
           curValue.toString();
         statusPanel.innerHTML = `${points} points accumulated`;
-        momentos.set(point, curValue.toString());
+        //momentos.set(point, curValue.toString());
+        localStorage.setItem(JSON.stringify(point), curValue.toString());
         cacheList.get(point)?.fromMomento(curValue.toString());
       });
     });
 
     const deposit = container.querySelector<HTMLButtonElement>("#deposit")!;
     deposit.addEventListener("click", () => {
-      let curValue = Number(momentos.get(point));
+      //let curValue = Number(momentos.get(point));
+      let curValue = Number(localStorage.getItem(pointS));
       if (points > 0) {
         curValue++;
         points--;
@@ -115,7 +129,8 @@ function makePit(i: number, j: number) {
       container.querySelector<HTMLSpanElement>("#value")!.innerHTML =
         curValue.toString();
       statusPanel.innerHTML = `${points} points accumulated`;
-      momentos.set(point, curValue.toString());
+      //momentos.set(point, curValue.toString());
+      localStorage.setItem(JSON.stringify(point), curValue.toString());
       cacheList.get(point)?.fromMomento(curValue.toString());
     });
     return container;
