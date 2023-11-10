@@ -44,6 +44,7 @@ const south = document.getElementById("south");
 const north = document.getElementById("north");
 const east = document.getElementById("east");
 const west = document.getElementById("west");
+const sensor = document.getElementById("sensor");
 
 currentMap.getGridCell(MERRILL_CLASSROOM.lat, MERRILL_CLASSROOM.lng);
 const playerMarker = leaflet.marker(MERRILL_CLASSROOM);
@@ -96,7 +97,6 @@ function makePit(i: number, j: number) {
           curValue--;
           points++;
         }
-        console.log(curValue);
         container.querySelector<HTMLSpanElement>("#value")!.innerHTML =
           curValue.toString();
         statusPanel.innerHTML = `${points} points accumulated`;
@@ -183,6 +183,7 @@ south?.addEventListener("click", () => {
     lat: playerMarker.getLatLng().lat - 0.0001,
     lng: playerMarker.getLatLng().lng,
   });
+  map.setView(playerMarker.getLatLng());
   updater(cacheMap);
   //pitSpawner();
 });
@@ -192,6 +193,7 @@ north?.addEventListener("click", () => {
     lat: playerMarker.getLatLng().lat + 0.0001,
     lng: playerMarker.getLatLng().lng,
   });
+  map.setView(playerMarker.getLatLng());
   updater(cacheMap);
   //pitSpawner();
 });
@@ -201,6 +203,7 @@ east?.addEventListener("click", () => {
     lat: playerMarker.getLatLng().lat,
     lng: playerMarker.getLatLng().lng + 0.0001,
   });
+  map.setView(playerMarker.getLatLng());
   updater(cacheMap);
   //pitSpawner();
 });
@@ -210,6 +213,21 @@ west?.addEventListener("click", () => {
     lat: playerMarker.getLatLng().lat,
     lng: playerMarker.getLatLng().lng - 0.0001,
   });
+  map.setView(playerMarker.getLatLng());
   updater(cacheMap);
   //pitSpawner();
+});
+
+sensor?.addEventListener("click", () => {
+  navigator.geolocation.watchPosition((position) => {
+    playerMarker.setLatLng(
+      leaflet.latLng(position.coords.latitude, position.coords.longitude)
+    );
+    map.setView(playerMarker.getLatLng());
+    updater(cacheMap);
+  }),
+    function error() {
+      alert(`Please enable your GPS position feature.`);
+    },
+    { maximumAge: 10000, timeout: 5000, enableHighAccuracy: true };
 });
