@@ -31,6 +31,10 @@ export class Board {
   printBoard() {
     console.log(this.knownCells);
   }
+
+  clearBoard() {
+    this.knownCells.clear();
+  }
 }
 
 export class Cache {
