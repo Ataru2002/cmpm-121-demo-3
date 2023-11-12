@@ -28,6 +28,10 @@ export class Board {
     return newCell;
   }
 
+  getBoard(): Map<string, Cell> {
+    return this.knownCells;
+  }
+
   printBoard() {
     console.log(this.knownCells);
   }

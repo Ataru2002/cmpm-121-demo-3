@@ -65,19 +65,10 @@ statusPanel.innerHTML = "No points yet...";
 
 function makePit(i: number, j: number) {
   const bounds = leaflet.latLngBounds([
-    [
-      playerMarker.getLatLng().lat + i * TILE_DEGREES,
-      playerMarker.getLatLng().lng + j * TILE_DEGREES,
-    ],
-    [
-      playerMarker.getLatLng().lat + (i + 1) * TILE_DEGREES,
-      playerMarker.getLatLng().lng + (j + 1) * TILE_DEGREES,
-    ],
+    [i, j],
+    [i + 1 * TILE_DEGREES, j + 1 * TILE_DEGREES],
   ]);
-  const point = currentMap.getGridCell(
-    playerMarker.getLatLng().lat + i * TILE_DEGREES,
-    playerMarker.getLatLng().lng + j * TILE_DEGREES
-  );
+  const point = currentMap.getGridCell(i, j);
   cacheList.set(point, new Cache(point));
   const pit = leaflet.rectangle(bounds) as leaflet.Layer;
   cacheMap.set(point, [pit, true]);
@@ -92,11 +83,21 @@ function makePit(i: number, j: number) {
       JSON.stringify(point),
       cacheList.get(point)!.toMomento()
     );
+  } else {
+    for (
+      let iter = 0;
+      iter < Number(localStorage.getItem(JSON.stringify(point)));
+      iter++
+    ) {
+      cacheList.get(point)?.addCoin();
+    }
   }
+
   pit.bindPopup(() => {
     //string maker
     const pointS = JSON.stringify(point);
     const stringAdd: string[] = cacheList.get(point)!.format();
+    console.log("try: ", cacheList.get(point));
     //const content = messageGen(i, j, Number(momentos.get(point)), stringAdd);
     const content = messageGen(
       i,
@@ -104,10 +105,9 @@ function makePit(i: number, j: number) {
       Number(localStorage.getItem(pointS)),
       stringAdd
     );
-
     const container = document.createElement("div");
     container.innerHTML = content;
-
+    /*
     container.addEventListener("click", () => {
       map.setView(
         leaflet.latLng({
@@ -116,7 +116,7 @@ function makePit(i: number, j: number) {
         })
       );
     });
-
+    */
     const collects = container.querySelectorAll<HTMLButtonElement>("#collect")!;
     collects.forEach((collect) => {
       collect.addEventListener("click", () => {
@@ -156,14 +156,29 @@ function makePit(i: number, j: number) {
   pit.addTo(map);
 }
 
-function pitSpawner() {
+function potentialpits(curLocation: leaflet.LatLng) {
   for (let i = -NEIGHBORHOOD_SIZE; i < NEIGHBORHOOD_SIZE; i++) {
     for (let j = -NEIGHBORHOOD_SIZE; j < NEIGHBORHOOD_SIZE; j++) {
-      if (luck([i, j].toString()) < PIT_SPAWN_PROBABILITY) {
-        makePit(i, j);
-      }
+      currentMap.getGridCell(
+        curLocation.lat + i * TILE_DEGREES,
+        curLocation.lng + j * TILE_DEGREES
+      );
     }
   }
+}
+
+function pitSpawner() {
+  const state = currentMap.getBoard();
+  state.forEach((cell) => {
+    if (
+      luck([cell.x * TILE_DEGREES, cell.y * TILE_DEGREES].toString()) <
+        PIT_SPAWN_PROBABILITY &&
+      !cacheList.has(cell) &&
+      !cacheMap.has(cell)
+    ) {
+      makePit(cell.x * TILE_DEGREES, cell.y * TILE_DEGREES);
+    }
+  });
 }
 
 function messageGen(
@@ -172,6 +187,7 @@ function messageGen(
   value: number,
   list: string[]
 ): string {
+  console.log(list);
   let content = `<div>There is a pit here at "${xDiff},${yDiff}". It has value <span id="value">${value}</span>.</div>
                   <p>Inventory:</p>
                   <div id="scrollableContainer"`;
@@ -184,6 +200,7 @@ function messageGen(
   return content;
 }
 
+potentialpits(playerMarker.getLatLng());
 pitSpawner();
 
 function updater(cacheMap: Map<Cell, [leaflet.Layer, boolean]>) {
@@ -221,7 +238,8 @@ south?.addEventListener("click", () => {
   playerPath = polyline(movements, { color: `red` }).addTo(map);
   polylineArray.push(playerPath);
   updater(cacheMap);
-  //pitSpawner();
+  potentialpits(playerMarker.getLatLng());
+  pitSpawner();
 });
 
 north?.addEventListener("click", () => {
@@ -234,7 +252,8 @@ north?.addEventListener("click", () => {
   playerPath = polyline(movements, { color: `red` }).addTo(map);
   polylineArray.push(playerPath);
   updater(cacheMap);
-  //pitSpawner();
+  potentialpits(playerMarker.getLatLng());
+  pitSpawner();
 });
 
 east?.addEventListener("click", () => {
@@ -247,7 +266,8 @@ east?.addEventListener("click", () => {
   playerPath = polyline(movements, { color: `red` }).addTo(map);
   polylineArray.push(playerPath);
   updater(cacheMap);
-  //pitSpawner();
+  potentialpits(playerMarker.getLatLng());
+  pitSpawner();
 });
 
 west?.addEventListener("click", () => {
@@ -260,7 +280,8 @@ west?.addEventListener("click", () => {
   playerPath = polyline(movements, { color: `red` }).addTo(map);
   polylineArray.push(playerPath);
   updater(cacheMap);
-  //pitSpawner();
+  potentialpits(playerMarker.getLatLng());
+  pitSpawner();
 });
 
 sensor?.addEventListener("click", () => {
@@ -296,6 +317,7 @@ reset?.addEventListener("click", () => {
   });
   cacheMap.clear(); //clear all cache on map
   localStorage.clear(); //clear momento
+  potentialpits(playerMarker.getLatLng());
   pitSpawner(); //respawn the pits;
   points = 0;
   statusPanel.innerHTML = "No points yet..."; //reset the points
