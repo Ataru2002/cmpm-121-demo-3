@@ -40,7 +40,7 @@ const cacheMap: Map<Cell, [leaflet.Layer, boolean]> = new Map<
   Cell,
   [leaflet.Layer, boolean]
 >();
-const playerCoins: Coins[] = [];
+let playerCoins: Coins[] = [];
 let movements: leaflet.LatLng[] = [];
 let polylineArray: leaflet.Polyline[] = [];
 
@@ -153,6 +153,7 @@ function makePit(i: number, j: number) {
         curValue?.splice(index, 1);
         container.querySelector<HTMLSpanElement>("#value")!.innerHTML =
           curValue!.length.toString();
+        console.log(playerCoins.length);
         statusPanel.innerHTML = `${playerCoins.length} points accumulated`;
         //momento
         localStorage.setItem(JSON.stringify(point), curValue!.join(","));
@@ -367,5 +368,6 @@ reset?.addEventListener("click", () => {
   potentialpits(playerMarker.getLatLng());
   pitSpawner(); //respawn the pits;
   localStorage.setItem("player", ``);
+  playerCoins = [];
   statusPanel.innerHTML = "No points yet..."; //reset the points
 });
