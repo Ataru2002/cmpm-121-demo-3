@@ -3,7 +3,7 @@ export interface Cell {
   y: number;
 }
 
-interface Coins {
+export interface Coins {
   coord: Cell;
   serial: number;
 }
@@ -43,6 +43,7 @@ export class Board {
 
 export class Cache {
   coinList: Coins[];
+  formatList: string[];
   cell: Cell;
   description: string;
 
@@ -50,6 +51,7 @@ export class Cache {
     this.description = ``;
     this.cell = cell;
     this.coinList = [];
+    this.formatList = [];
   }
 
   addCoin() {
@@ -58,7 +60,8 @@ export class Cache {
         ? this.coinList[this.coinList.length - 1].serial + 1
         : 0;
     this.coinList.push({ coord: this.cell, serial: curSerial });
-    this.description = this.coinList.length.toString();
+    this.formatList.push(`${this.cell.x}#${this.cell.y}#${curSerial}`);
+    this.description = this.formatList.join(",");
   }
 
   format(): string[] {
@@ -74,6 +77,12 @@ export class Cache {
   }
 
   fromMomento(momento: string) {
+    this.formatList = momento.split(",");
+    this.coinList = [];
+    this.formatList.forEach((instance) => {
+      const tempArr: string[] = instance.split("#");
+      this.coinList.push({ coord: this.cell, serial: Number(tempArr[2]) });
+    });
     this.description = momento;
   }
 }

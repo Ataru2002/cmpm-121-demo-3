@@ -1,6 +1,6 @@
 import "leaflet/dist/leaflet.css";
 import "./style.css";
-import { Board, Cache, Cell } from "./block.ts";
+import { Board, Cache, Cell, Coins } from "./block.ts";
 import leaflet, { polyline } from "leaflet";
 import luck from "./luck";
 import "./leafletWorkaround";
@@ -40,6 +40,7 @@ const cacheMap: Map<Cell, [leaflet.Layer, boolean]> = new Map<
   Cell,
   [leaflet.Layer, boolean]
 >();
+const playerCoins: Coins[] = [];
 let movements: leaflet.LatLng[] = [];
 let polylineArray: leaflet.Polyline[] = [];
 
@@ -50,6 +51,20 @@ const west = document.getElementById("west");
 const sensor = document.getElementById("sensor");
 const reset = document.getElementById("reset");
 
+if (localStorage.getItem("player") == null) {
+  localStorage.setItem("player", ``);
+} else if (localStorage.getItem(`player`)) {
+  const temp = localStorage.getItem(`player`)?.split(",");
+  temp?.splice(temp.length - 1, 1);
+  temp?.forEach((instance) => {
+    const temp2 = instance.split("#");
+    playerCoins.push({
+      coord: { x: Number(temp2[0]), y: Number(temp2[1]) },
+      serial: Number(temp2[2]),
+    });
+  });
+}
+
 currentMap.getGridCell(MERRILL_CLASSROOM.lat, MERRILL_CLASSROOM.lng);
 const playerMarker = leaflet.marker(MERRILL_CLASSROOM);
 movements.push(playerMarker.getLatLng());
@@ -59,11 +74,15 @@ polylineArray.push(playerPath);
 playerMarker.bindTooltip("That's you!");
 playerMarker.addTo(map);
 
-let points = 0;
 const statusPanel = document.querySelector<HTMLDivElement>("#statusPanel")!;
-statusPanel.innerHTML = "No points yet...";
-
+console.log(playerCoins);
+if (playerCoins.length > 0) {
+  statusPanel.innerHTML = `${playerCoins.length} points accumulated`;
+} else {
+  statusPanel.innerHTML = `No points accumulated`;
+}
 function makePit(i: number, j: number) {
+  //setup the maps
   const bounds = leaflet.latLngBounds([
     [i, j],
     [i + 1 * TILE_DEGREES, j + 1 * TILE_DEGREES],
@@ -74,6 +93,7 @@ function makePit(i: number, j: number) {
   cacheMap.set(point, [pit, true]);
 
   //momentos.set(point, cacheList.get(point)!.toMomento());
+  //setup local storage
   if (localStorage.getItem(JSON.stringify(point)) == null) {
     const value = Math.floor(luck([i, j, "initialValue"].toString()) * 100);
     for (let iter = 0; iter < value; iter++) {
@@ -84,71 +104,85 @@ function makePit(i: number, j: number) {
       cacheList.get(point)!.toMomento()
     );
   } else {
-    for (
-      let iter = 0;
-      iter < Number(localStorage.getItem(JSON.stringify(point)));
-      iter++
-    ) {
-      cacheList.get(point)?.addCoin();
-    }
+    const curValue = localStorage.getItem(JSON.stringify(point));
+    cacheList.get(point)?.fromMomento(curValue!);
   }
 
+  //popup
   pit.bindPopup(() => {
     //string maker
     const pointS = JSON.stringify(point);
     const stringAdd: string[] = cacheList.get(point)!.format();
-    console.log("try: ", cacheList.get(point));
     //const content = messageGen(i, j, Number(momentos.get(point)), stringAdd);
     const content = messageGen(
       i,
       j,
-      Number(localStorage.getItem(pointS)),
+      localStorage.getItem(pointS)!.split(",").length,
       stringAdd
     );
     const container = document.createElement("div");
+    container.id = "popup";
     container.innerHTML = content;
-    /*
+
     container.addEventListener("click", () => {
       map.setView(
         leaflet.latLng({
-          lat: point.x,
-          lng: point.y,
+          lat: point.x * TILE_DEGREES,
+          lng: point.y * TILE_DEGREES,
         })
       );
     });
-    */
+
     const collects = container.querySelectorAll<HTMLButtonElement>("#collect")!;
-    collects.forEach((collect) => {
+    collects.forEach((collect, index) => {
       collect.addEventListener("click", () => {
-        //let curValue = Number(momentos.get(point));
-        let curValue = Number(localStorage.getItem(pointS));
-        if (curValue > 0) {
-          curValue--;
-          points++;
+        const curValue = localStorage.getItem(pointS)?.split(",");
+        //change score
+        if (curValue) {
+          const temp = curValue[index].split("#");
+          let tempStr = localStorage.getItem(`player`);
+          playerCoins.push({
+            coord: { x: Number(temp[0]), y: Number(temp[1]) },
+            serial: Number(temp[2]),
+          });
+          tempStr += curValue[index];
+          tempStr += ",";
+          localStorage.setItem(`player`, tempStr!);
         }
+        //change storage
+        curValue?.splice(index, 1);
         container.querySelector<HTMLSpanElement>("#value")!.innerHTML =
-          curValue.toString();
-        statusPanel.innerHTML = `${points} points accumulated`;
-        //momentos.set(point, curValue.toString());
-        localStorage.setItem(JSON.stringify(point), curValue.toString());
-        cacheList.get(point)?.fromMomento(curValue.toString());
+          curValue!.length.toString();
+        statusPanel.innerHTML = `${playerCoins.length} points accumulated`;
+        //momento
+        localStorage.setItem(JSON.stringify(point), curValue!.join(","));
+        cacheList.get(point)?.fromMomento(curValue!.join(","));
+        messageChange(
+          localStorage.getItem(pointS)!.split(",").length,
+          curValue!
+        );
       });
     });
 
     const deposit = container.querySelector<HTMLButtonElement>("#deposit")!;
     deposit.addEventListener("click", () => {
-      //let curValue = Number(momentos.get(point));
-      let curValue = Number(localStorage.getItem(pointS));
-      if (points > 0) {
-        curValue++;
-        points--;
-      }
+      const curValue = localStorage.getItem(pointS)?.split(",");
+      const chosenCoin = playerCoins[playerCoins.length - 1];
+      const temp = `${chosenCoin.coord.x}#${chosenCoin.coord.y}#${chosenCoin.serial}`;
+      curValue?.push(temp);
+      playerCoins.splice(playerCoins.length - 1, 1);
+
       container.querySelector<HTMLSpanElement>("#value")!.innerHTML =
-        curValue.toString();
-      statusPanel.innerHTML = `${points} points accumulated`;
+        curValue!.length.toString();
+      if (playerCoins.length == 0) {
+        statusPanel.innerHTML = `No points accumulated`;
+      } else {
+        statusPanel.innerHTML = `${playerCoins.length} points accumulated`;
+      }
       //momentos.set(point, curValue.toString());
-      localStorage.setItem(JSON.stringify(point), curValue.toString());
-      cacheList.get(point)?.fromMomento(curValue.toString());
+      localStorage.setItem(JSON.stringify(point), curValue!.join(","));
+      cacheList.get(point)?.fromMomento(curValue!.join(","));
+      messageChange(localStorage.getItem(pointS)!.split(",").length, curValue!);
     });
     return container;
   });
@@ -187,21 +221,30 @@ function messageGen(
   value: number,
   list: string[]
 ): string {
-  console.log(list);
   let content = `<div>There is a pit here at "${xDiff},${yDiff}". It has value <span id="value">${value}</span>.</div>
                   <p>Inventory:</p>
                   <div id="scrollableContainer"`;
   for (let iter = 0; iter < value; iter++) {
     if (list) {
-      content += `<p>${list[iter]}   <button id="collect">collect</button></p>`;
+      content += `<p id="delete${iter}">${list[iter]}   <button id="collect">collect</button></p>`;
     }
   }
   content += `</div><button id="deposit">deposit</button>`;
   return content;
 }
 
-potentialpits(playerMarker.getLatLng());
-pitSpawner();
+function messageChange(value: number, list: string[]) {
+  const temp = document.getElementById(`scrollableContainer`);
+  let content = ``;
+  for (let iter = 0; iter < value; iter++) {
+    if (list) {
+      content += `<p>${list[iter]}   <button id="collect">collect</button></p>`;
+    }
+  }
+  if (temp) {
+    temp.innerHTML = content;
+  }
+}
 
 function updater(cacheMap: Map<Cell, [leaflet.Layer, boolean]>) {
   const playerCell: Cell = currentMap.getGridCell(
@@ -227,6 +270,8 @@ function updater(cacheMap: Map<Cell, [leaflet.Layer, boolean]>) {
 }
 
 //currentMap.printBoard();
+potentialpits(playerMarker.getLatLng());
+pitSpawner();
 
 south?.addEventListener("click", () => {
   playerMarker.setLatLng({
@@ -294,6 +339,8 @@ sensor?.addEventListener("click", () => {
     playerPath = polyline(movements, { color: `red` }).addTo(map);
     polylineArray.push(playerPath);
     updater(cacheMap);
+    potentialpits(playerMarker.getLatLng());
+    pitSpawner();
   }),
     function error() {
       alert(`Please enable your GPS position feature.`);
@@ -319,6 +366,6 @@ reset?.addEventListener("click", () => {
   localStorage.clear(); //clear momento
   potentialpits(playerMarker.getLatLng());
   pitSpawner(); //respawn the pits;
-  points = 0;
+  localStorage.setItem("player", ``);
   statusPanel.innerHTML = "No points yet..."; //reset the points
 });
