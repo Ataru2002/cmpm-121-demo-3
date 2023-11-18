@@ -66,9 +66,13 @@ export class Cache {
 
   format(): string[] {
     const res: string[] = [];
-    this.coinList.map((coin) => {
-      res.push(`${coin.coord.x}:${coin.coord.y}#${coin.serial}`);
-    });
+    console.log("AHHHHHH: ", this.coinList);
+    if (this.coinList) {
+      this.coinList.map((coin) => {
+        res.push(`${coin.coord.x}:${coin.coord.y}#${coin.serial}`);
+      });
+    }
+    //console.log(res);
     return res;
   }
 
@@ -77,12 +81,16 @@ export class Cache {
   }
 
   fromMomento(momento: string) {
-    this.formatList = momento.split(",");
     this.coinList = [];
-    this.formatList.forEach((instance) => {
-      const tempArr: string[] = instance.split("#");
-      this.coinList.push({ coord: this.cell, serial: Number(tempArr[2]) });
-    });
+    if (momento != ``) {
+      this.formatList = momento.split(",");
+      this.formatList.forEach((instance) => {
+        const tempArr: string[] = instance.split("#");
+        this.coinList.push({ coord: this.cell, serial: Number(tempArr[2]) });
+      });
+    }
+    console.log("momento: ", momento);
+    console.log(this.coinList);
     this.description = momento;
   }
 }

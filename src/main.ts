@@ -113,13 +113,9 @@ function makePit(i: number, j: number) {
     //string maker
     const pointS = JSON.stringify(point);
     const stringAdd: string[] = cacheList.get(point)!.format();
-    //const content = messageGen(i, j, Number(momentos.get(point)), stringAdd);
-    const content = messageGen(
-      i,
-      j,
-      localStorage.getItem(pointS)!.split(",").length,
-      stringAdd
-    );
+
+    console.log(stringAdd);
+    const content = messageGen(i, j, stringAdd.length, stringAdd);
     const container = document.createElement("div");
     container.id = "popup";
     container.innerHTML = content;
@@ -136,7 +132,10 @@ function makePit(i: number, j: number) {
     const collects = container.querySelectorAll<HTMLButtonElement>("#collect")!;
     collects.forEach((collect, index) => {
       collect.addEventListener("click", () => {
-        const curValue = localStorage.getItem(pointS)?.split(",");
+        const curValue =
+          localStorage.getItem(pointS) != ``
+            ? localStorage.getItem(pointS)?.split(",")
+            : [];
         //change score
         if (curValue) {
           const temp = curValue[index].split("#");
@@ -151,13 +150,18 @@ function makePit(i: number, j: number) {
         }
         //change storage
         curValue?.splice(index, 1);
+        console.log(curValue!.length);
         container.querySelector<HTMLSpanElement>("#value")!.innerHTML =
           curValue!.length.toString();
-        console.log(playerCoins.length);
         statusPanel.innerHTML = `${playerCoins.length} points accumulated`;
         //momento
-        localStorage.setItem(JSON.stringify(point), curValue!.join(","));
-        cacheList.get(point)?.fromMomento(curValue!.join(","));
+        localStorage.setItem(
+          JSON.stringify(point),
+          curValue!.length > 0 ? curValue!.join(",") : ``
+        );
+        cacheList
+          .get(point)
+          ?.fromMomento(curValue!.length > 0 ? curValue!.join(",") : ``);
         messageChange(
           localStorage.getItem(pointS)!.split(",").length,
           curValue!
@@ -167,12 +171,22 @@ function makePit(i: number, j: number) {
 
     const deposit = container.querySelector<HTMLButtonElement>("#deposit")!;
     deposit.addEventListener("click", () => {
-      const curValue = localStorage.getItem(pointS)?.split(",");
-      const chosenCoin = playerCoins[playerCoins.length - 1];
-      const temp = `${chosenCoin.coord.x}#${chosenCoin.coord.y}#${chosenCoin.serial}`;
-      curValue?.push(temp);
-      playerCoins.splice(playerCoins.length - 1, 1);
-
+      const curValue =
+        localStorage.getItem(pointS) != ``
+          ? localStorage.getItem(pointS)?.split(",")
+          : [];
+      let update = ``;
+      if (playerCoins.length > 0) {
+        const chosenCoin = playerCoins[playerCoins.length - 1];
+        const temp = `${chosenCoin.coord.x}#${chosenCoin.coord.y}#${chosenCoin.serial}`;
+        curValue?.push(temp);
+        playerCoins.splice(playerCoins.length - 1, 1);
+        playerCoins.forEach((instance) => {
+          update += `${instance.coord.x}#${instance.coord.y}#${instance.serial},`;
+        });
+        console.log(update);
+      }
+      localStorage.setItem(`player`, update);
       container.querySelector<HTMLSpanElement>("#value")!.innerHTML =
         curValue!.length.toString();
       if (playerCoins.length == 0) {
@@ -181,9 +195,13 @@ function makePit(i: number, j: number) {
         statusPanel.innerHTML = `${playerCoins.length} points accumulated`;
       }
       //momentos.set(point, curValue.toString());
+      console.log(curValue);
+      const newVal = curValue!.join(",");
+      console.log("newVal: ", newVal);
       localStorage.setItem(JSON.stringify(point), curValue!.join(","));
       cacheList.get(point)?.fromMomento(curValue!.join(","));
       messageChange(localStorage.getItem(pointS)!.split(",").length, curValue!);
+      pit.closePopup();
     });
     return container;
   });
